@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block title %}Infrastructure Reports & Analytics{% endblock %}
+{% block page_title %}Infrastructure Health & Maintenance Reports{% endblock %}
+
+{% block content %}
+<!-- Report Navigation Tabs & Filters -->
+<div class="card border-0 shadow-sm rounded-3 p-3 bg-white mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <!-- Report Category Selector -->
+        <div class="btn-group" role="group">
+            <a href="{{ url_for('reports.reports_page', type='health') }}" class="btn btn-sm {{ 'btn-primary' if report_type == 'health' else 'btn-outline-secondary' }}">
+                <i class="bi bi-heart-pulse me-1"></i> Infrastructure Health
+            </a>
+            <a href="{{ url_for('reports.reports_page', type='maintenance') }}" class="btn btn-sm {{ 'btn-primary' if report_type == 'maintenance' else 'btn-outline-secondary' }}">
+                <i class="bi bi-tools me-1"></i> Maintenance Operations
+            </a>
+            <a href="{{ url_for('reports.reports_page', type='alerts') }}" class="btn btn-sm {{ 'btn-primary' if report_type == 'alerts' else 'btn-outline-secondary' }}">
+                <i class="bi bi-exclamation-triangle me-1"></i> Critical & Alerts
+            </a>
+            <a href="{{ url_for('reports.reports_page', type='surveys') }}" class="btn btn-sm {{ 'btn-primary' if report_type == 'surveys' else 'btn-outline-secondary' }}">
+                <i class="bi bi-clipboard-data me-1"></i> Community Surveys
+            </a>
+        </div>
+
+        <!-- Export Buttons -->
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('reports.export_csv', type=report_type) }}" class="btn btn-sm btn-outline-success">
+                <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
+            </a>
+            <button class="btn btn-sm btn-outline-dark" onclick="window.print()">
+                <i class="bi bi-printer me-1"></i> Print Report
+            </button>
+        </div>
+    </div>
+
+    <hr class="my-3 text-muted">
+
+    <!-- Filter Form -->
+    <form method="GET" action="{{ url_for('reports.reports_page') }}" class="row g-2 align-items-center">
+        <input type="hidden" name="type" value="{{ report_type }}">
+
+        <div class="col-md-3 col-sm-6">
+            <label class="form-label small fw-semibold text-muted mb-1">Asset Category</label>
+            <select name="asset_type" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="all" {{ 'selected' if asset_type == 'all' else '' }}>All Monitored Infrastructure</option>
+                <option value="streetlight" {{ 'selected' if asset_type == 'streetlight' else '' }}>Streetlights Network</option>
+                <option value="road" {{ 'selected' if asset_type == 'road' else '' }}>Campus Roads Network</option>
+            </select>
+        </div>
+
+        <div class="col-md-3 col-sm-6">
+            <label class="form-label small fw-semibold text-muted mb-1">Condition Status</label>
+            <select name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="all" {{ 'selected' if status == 'all' else '' }}>All Conditions</option>
+                <option value="Good" {{ 'selected' if status == 'Good' else '' }}>Good</option>
+                <option value="Moderate" {{ 'selected' if status == 'Moderate' else '' }}>Moderate</option>
+                <option value="Poor" {{ 'selected' if status == 'Poor' else '' }}>Poor</option>
+                <option value="Critical" {{ 'selected' if status == 'Critical' else '' }}>Critical</option>
+            </select>
+        </div>
+
+        <div class="col-md-3 col-sm-6">
+            <label class="form-label small fw-semibold text-muted mb-1">AI Risk Level</label>
+            <select name="risk" class="form-select form-select-sm" onchange="this.form.submit()">
+                <option value="all" {{ 'selected' if risk_level == 'all' else '' }}>All Risk Levels</option>
+                <option value="High Risk" {{ 'selected' if risk_level == 'High Risk' else '' }}>High Risk Only</option>
+                <option value="Medium Risk" {{ 'selected' if risk_level == 'Medium Risk' else '' }}>Medium Risk Only</option>
+                <option value="Low Risk" {{ 'selected' if risk_level == 'Low Risk' else '' }}>Low Risk Only</option>
+            </select>
+        </div>
+
+        <div class="col-md-3 col-sm-6 text-end pt-3">
+            <a href="{{ url_for('reports.reports_page', type=report_type) }}" class="btn btn-sm btn-link text-decoration-none">Reset Filters</a>
+        </div>
+    </form>
+</div>
+
+<!-- Report Content Table Area -->
+<div class="card border-0 shadow-sm rounded-3 overflow-hidden bg-white mb-4">
+    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0 text-dark">
+            {% if report_type == 'maintenance' %}
+                <i class="bi bi-tools text-primary me-2"></i>Campus Maintenance Audit Report
+            {% elif report_type == 'alerts' %}
+                <i class="bi bi-shield-exclamation text-danger me-2"></i>Predictive Alerts & Critical Incidents Report
+            {% elif report_type == 'surveys' %}
+                <i class="bi bi-clipboard-data text-success me-2"></i>Campus Survey & Feedback Report
+            {% else %}
+                <i class="bi bi-heart-pulse text-primary me-2"></i>Comprehensive Infrastructure Health Report
+            {% endif %}
+        </h5>
+        <span class="badge bg-light text-muted border">
+            {% if report_type == 'maintenance' %}{{ maintenance|length }} Records
+            {% elif report_type == 'alerts' %}{{ alerts|length }} Alerts
+            {% elif report_type == 'surveys' %}{{ surveys|length }} Feedback Entries
+            {% else %}{{ assets|length }} Assets Evaluated
+            {% endif %}
+        </span>
+    </div>
+
+    <div class="table-responsive">
+        {% if report_type == 'maintenance' %}
+        <!-- Maintenance Audit Table -->
+        <table class="table table-custom table-hover">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Asset Tag / Type</th>
+                    <th>Location</th>
+                    <th>Problem Description</th>
+                    <th>Priority</th>
+                    <th>Assigned Staff</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in maintenance %}
+                <tr>
+                    <td class="fw-bold text-primary">{{ m.maintenance_code }}</td>
+                    <td>
+                        <span class="badge bg-dark">{{ m.asset_tag }}</span>
+                        <div class="small text-muted">{{ m.asset_type.replace('_', ' ')|capitalize }}</div>
+                    </td>
+                    <td>{{ m.location }}</td>
+                    <td>{{ m.problem }}</td>
+                    <td><span class="badge {{ m.priority|badge_class }}">{{ m.priority }}</span></td>
+                    <td>{{ m.staff_name or 'Unassigned' }}</td>
+                    <td>{{ m.due_date or 'N/A' }}</td>
+                    <td><span class="badge {{ m.status|badge_class }}">{{ m.status }}</span></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="8" class="text-center py-4 text-muted">No maintenance tasks found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% elif report_type == 'alerts' %}
+        <!-- Predictive Alerts Table -->
+        <table class="table table-custom table-hover">
+            <thead>
+                <tr>
+                    <th>Alert ID</th>
+                    <th>Asset Tag / Type</th>
+                    <th>Alert Type</th>
+                    <th>Risk Level</th>
+                    <th>Problem Telemetry</th>
+                    <th>Recommended Engineering Action</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for al in alerts %}
+                <tr>
+                    <td>#{{ al.id }}</td>
+                    <td>
+                        <span class="badge bg-dark">{{ al.asset_tag }}</span>
+                        <div class="small text-muted">{{ al.asset_type.replace('_', ' ')|capitalize }}</div>
+                    </td>
+                    <td><span class="badge {{ al.alert_type|badge_class }}">{{ al.alert_type }}</span></td>
+                    <td><span class="badge {{ al.risk_level|badge_class }}">{{ al.risk_level }}</span></td>
+                    <td class="fw-semibold text-dark">{{ al.problem }}</td>
+                    <td><small class="text-secondary">{{ al.recommended_action }}</small></td>
+                    <td><span class="badge {{ al.status|badge_class }}">{{ al.status }}</span></td>
+                    <td><small class="text-muted">{{ al.created_at }}</small></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="8" class="text-center py-4 text-muted">No active alerts recorded.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% elif report_type == 'surveys' %}
+        <!-- Survey Feedback Table -->
+        <table class="table table-custom table-hover">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Respondent</th>
+                    <th>Role</th>
+                    <th>Streetlights</th>
+                    <th>Roads</th>
+                    <th>Water Supply</th>
+                    <th>Drainage</th>
+                    <th>Rating</th>
+                    <th>AI System Perception</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in surveys %}
+                <tr>
+                    <td>#{{ s.id }}</td>
+                    <td class="fw-semibold text-dark">{{ s.respondent_name }}</td>
+                    <td><span class="badge bg-secondary">{{ s.respondent_role }}</span></td>
+                    <td>{{ s.streetlights_working }}</td>
+                    <td>{{ s.roads_potholes }}</td>
+                    <td>{{ s.water_supply_regular }}</td>
+                    <td>{{ s.drainage_flow_ok }}</td>
+                    <td class="text-warning fw-bold">&#9733; {{ s.maintenance_satisfaction }}/5</td>
+                    <td><span class="badge bg-primary-subtle text-primary">{{ s.ai_monitoring_useful }}</span></td>
+                    <td><small class="text-muted">{{ s.created_at[:10] if s.created_at else 'N/A' }}</small></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="10" class="text-center py-4 text-muted">No survey records available.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% else %}
+        <!-- Comprehensive Infrastructure Health Table -->
+        <table class="table table-custom table-hover">
+            <thead>
+                <tr>
+                    <th>Asset Tag</th>
+                    <th>Name / Location</th>
+                    <th>Type</th>
+                    <th>Health Score</th>
+                    <th>Condition</th>
+                    <th>Age</th>
+                    <th>Failures</th>
+                    <th>Complaints</th>
+                    <th>AI Risk Prediction</th>
+                    <th>Predicted Failure Window</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in assets %}
+                <tr>
+                    <td><span class="badge bg-dark fw-bold">{{ a.asset_tag }}</span></td>
+                    <td>
+                        <div class="fw-semibold text-dark">{{ a.name }}</div>
+                        <div class="small text-muted">{{ a.location }}</div>
+                    </td>
+                    <td><span class="badge bg-light text-dark border">{{ a.asset_type.replace('_', ' ')|capitalize }}</span></td>
+                    <td>
+                        <span class="fw-bold {{ 'text-success' if a.health_score >= 80 else 'text-warning' if a.health_score >= 60 else 'text-danger' }}">
+                            {{ a.health_score }} / 100
+                        </span>
+                    </td>
+                    <td><span class="badge {{ a.condition_status|badge_class }}">{{ a.condition_status }}</span></td>
+                    <td>{{ a.age_years }} yrs</td>
+                    <td>{{ a.previous_failures }}</td>
+                    <td>{{ a.complaint_count }}</td>
+                    <td><span class="badge {{ a.ai_risk|badge_class }}">{{ a.ai_risk }}</span></td>
+                    <td><small class="fw-semibold text-secondary">{{ a.ai_window }}</small></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="10" class="text-center py-4 text-muted">No assets matching report filters.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,378 @@
+{% extends "base.html" %}
+
+{% block title %}Campus Infrastructure Dashboard{% endblock %}
+{% block page_title %}Executive Health & Operations Dashboard{% endblock %}
+
+{% block content %}
+<!-- Top Row: Overall Campus Health Score + Primary KPI Cards -->
+<div class="row g-3 mb-4">
+    <!-- Campus Health Score Hero Card -->
+    <div class="col-xl-4 col-lg-5">
+        <div class="health-score-hero h-100 d-flex flex-column justify-content-between">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle px-2 py-1 mb-2">Campus Telemetry</span>
+                    <h4 class="fw-bold mb-1 text-white">Overall Campus Health</h4>
+                    <p class="text-white-50 small mb-0">Multi-asset aggregated operational index</p>
+                </div>
+                <div class="text-end">
+                    <span class="pulse-danger me-1"></span>
+                    <span class="text-white-50 small">Live Monitored</span>
+                </div>
+            </div>
+
+            <div class="my-4 text-center">
+                <div class="health-score-circle">
+                    <span class="health-num text-white">{{ metrics.overall_health }}</span>
+                    <span class="health-den">/ 100</span>
+                </div>
+                <div class="mt-2">
+                    {% if metrics.overall_health >= 80 %}
+                        <span class="badge bg-success px-3 py-1 fs-6">Optimal Operational Status</span>
+                    {% elif metrics.overall_health >= 60 %}
+                        <span class="badge bg-warning text-dark px-3 py-1 fs-6">Moderate Maintenance Needed</span>
+                    {% else %}
+                        <span class="badge bg-danger px-3 py-1 fs-6">Critical Infrastructure Alert</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-around text-center pt-3 border-top border-secondary border-opacity-25 small">
+                <div>
+                    <div class="fw-bold text-white fs-6">{{ metrics.total_assets }}</div>
+                    <div class="text-white-50" style="font-size: 0.72rem;">TOTAL ASSETS</div>
+                </div>
+                <div>
+                    <div class="fw-bold text-success fs-6">{{ metrics.healthy_assets }}</div>
+                    <div class="text-white-50" style="font-size: 0.72rem;">HEALTHY</div>
+                </div>
+                <div>
+                    <div class="fw-bold text-warning fs-6">{{ metrics.warning_assets }}</div>
+                    <div class="text-white-50" style="font-size: 0.72rem;">WARNING</div>
+                </div>
+                <div>
+                    <div class="fw-bold text-danger fs-6">{{ metrics.critical_assets }}</div>
+                    <div class="text-white-50" style="font-size: 0.72rem;">CRITICAL</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6 KPI Grid Cards -->
+    <div class="col-xl-8 col-lg-7">
+        <div class="row g-3 h-100">
+            <!-- Total Assets -->
+            <div class="col-md-4 col-sm-6">
+                <div class="stat-card card-primary">
+                    <div class="stat-label">Total Assets</div>
+                    <div class="stat-val">{{ metrics.total_assets }}</div>
+                    <div class="stat-sub text-primary"><i class="bi bi-diagram-3-fill"></i> Monitored across campus</div>
+                    <div class="stat-icon-floating bg-soft-primary"><i class="bi bi-buildings"></i></div>
+                </div>
+            </div>
+
+            <!-- Healthy Assets -->
+            <div class="col-md-4 col-sm-6">
+                <div class="stat-card card-success">
+                    <div class="stat-label">Healthy Assets</div>
+                    <div class="stat-val text-success">{{ metrics.healthy_assets }}</div>
+                    <div class="stat-sub text-success"><i class="bi bi-check-circle-fill"></i> {{ ((metrics.healthy_assets / metrics.total_assets) * 100)|round|int if metrics.total_assets else 0 }}% good condition</div>
+                    <div class="stat-icon-floating bg-soft-success"><i class="bi bi-shield-check"></i></div>
+                </div>
+            </div>
+
+            <!-- Warning Assets -->
+            <div class="col-md-4 col-sm-6">
+                <div class="stat-card card-warning">
+                    <div class="stat-label">Warning Assets</div>
+                    <div class="stat-val text-warning">{{ metrics.warning_assets }}</div>
+                    <div class="stat-sub text-warning"><i class="bi bi-exclamation-circle-fill"></i> Preventative check due</div>
+                    <div class="stat-icon-floating bg-soft-warning"><i class="bi bi-exclamation-triangle"></i></div>
+                </div>
+            </div>
+
+            <!-- Critical Assets -->
+            <div class="col-md-4 col-sm-6">
+                <div class="stat-card card-danger">
+                    <div class="stat-label">Critical Assets</div>
+                    <div class="stat-val text-danger">{{ metrics.critical_assets }}</div>
+                    <div class="stat-sub text-danger"><i class="bi bi-x-circle-fill"></i> Requires urgent repair</div>
+                    <div class="stat-icon-floating bg-soft-danger"><i class="bi bi-exclamation-octagon"></i></div>
+                </div>
+            </div>
+
+            <!-- Pending Maintenance -->
+            <div class="col-md-4 col-sm-6">
+                <div class="stat-card card-orange">
+                    <div class="stat-label">Pending Work Orders</div>
+                    <div class="stat-val text-orange" style="color: #ea580c;">{{ metrics.pending_maintenance }}</div>
+                    <div class="stat-sub text-muted"><i class="bi bi-clock-history"></i> In queue or progress</div>
+                    <div class="stat-icon-floating bg-soft-orange"><i class="bi bi-tools"></i></div>
+                </div>
+            </div>
+
+            <!-- Predicted Failures -->
+            <div class="col-md-4 col-sm-6">
+                <div class="stat-card card-info">
+                    <div class="stat-label">AI Predicted Failures</div>
+                    <div class="stat-val text-info">{{ metrics.predicted_failures }}</div>
+                    <div class="stat-sub text-info"><i class="bi bi-cpu"></i> High risk within 7 days</div>
+                    <div class="stat-icon-floating bg-soft-info"><i class="bi bi-activity"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Monitored Infrastructure Telemetry (Streetlights & Roads) -->
+<div class="row g-3 mb-4">
+    <!-- Streetlights -->
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm rounded-3 p-4 bg-white h-100 border-start border-4 border-warning position-relative overflow-hidden">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                    <span class="badge bg-warning-subtle text-warning-emphasis text-uppercase fw-bold mb-1">
+                        <i class="bi bi-lightbulb-fill me-1"></i>Electrical & Illumination
+                    </span>
+                    <h5 class="fw-bold text-dark mb-0">Campus Streetlights Network</h5>
+                    <div class="small text-muted">Smart LED poles, illuminance & automated power tracking</div>
+                </div>
+                <div class="text-end">
+                    <span class="fs-3 fw-bold text-dark">{{ metrics.streetlights.total }}</span>
+                    <span class="small text-muted d-block">Total Poles</span>
+                </div>
+            </div>
+            
+            <div class="row g-2 mb-3 py-2 bg-light rounded-3 px-3">
+                <div class="col-4 border-end">
+                    <span class="small text-muted d-block">Active & ON</span>
+                    <strong class="text-success fs-5">{{ metrics.streetlights.working }}</strong>
+                </div>
+                <div class="col-4 border-end">
+                    <span class="small text-muted d-block">Faulty / Off</span>
+                    <strong class="text-danger fs-5">{{ metrics.streetlights.faulty }}</strong>
+                </div>
+                <div class="col-4">
+                    <span class="small text-muted d-block">Operating Rate</span>
+                    <strong class="text-primary fs-5">{{ metrics.streetlights.active_pct }}%</strong>
+                </div>
+            </div>
+
+            <div class="progress mb-3" style="height: 8px;">
+                <div class="progress-bar bg-success" style="width: {{ metrics.streetlights.active_pct }}%;" title="Working"></div>
+                <div class="progress-bar bg-danger" style="width: {{ 100 - metrics.streetlights.active_pct }}%;" title="Faulty"></div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center pt-1">
+                <span class="small text-muted"><i class="bi bi-clock-history me-1"></i>Monitored via IoT & Scikit-learn</span>
+                <a href="{{ url_for('assets.streetlights_page') }}" class="btn btn-sm btn-outline-warning fw-semibold">
+                    Manage Streetlights <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Campus Roads -->
+    <div class="col-md-6">
+        <div class="card border-0 shadow-sm rounded-3 p-4 bg-white h-100 border-start border-4 border-info position-relative overflow-hidden">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <div>
+                    <span class="badge bg-info-subtle text-info-emphasis text-uppercase fw-bold mb-1">
+                        <i class="bi bi-signpost-split-fill me-1"></i>Pavement & Connectivity
+                    </span>
+                    <h5 class="fw-bold text-dark mb-0">Campus Road Network</h5>
+                    <div class="small text-muted">Asphalt integrity, crack severity & pothole surveillance</div>
+                </div>
+                <div class="text-end">
+                    <span class="fs-3 fw-bold text-dark">{{ metrics.roads.total_km }}</span>
+                    <span class="small text-muted d-block">Total Kilometers</span>
+                </div>
+            </div>
+            
+            <div class="row g-2 mb-3 py-2 bg-light rounded-3 px-3">
+                <div class="col-4 border-end">
+                    <span class="small text-muted d-block">Good / Fair</span>
+                    <strong class="text-success fs-5">{{ metrics.roads.good_km }} km</strong>
+                </div>
+                <div class="col-4 border-end">
+                    <span class="small text-muted d-block">Damaged</span>
+                    <strong class="text-danger fs-5">{{ metrics.roads.damaged_km }} km</strong>
+                </div>
+                <div class="col-4">
+                    <span class="small text-muted d-block">Potholes Logged</span>
+                    <strong class="text-warning fs-5">{{ metrics.roads.potholes }}</strong>
+                </div>
+            </div>
+
+            <div class="progress mb-3" style="height: 8px;">
+                <div class="progress-bar bg-success" style="width: {{ metrics.roads.good_pct }}%;" title="Good"></div>
+                <div class="progress-bar bg-danger" style="width: {{ 100 - metrics.roads.good_pct }}%;" title="Damaged"></div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center pt-1">
+                <span class="small text-muted"><i class="bi bi-shield-check me-1"></i>Surfaced via GIS mapping</span>
+                <a href="{{ url_for('assets.roads_page') }}" class="btn btn-sm btn-outline-info fw-semibold">
+                    Inspect Road Segments <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js Visualizations (5 Interactive Charts from Prompt #3) -->
+<div class="row g-3 mb-4">
+    <!-- Chart 1 & 2: Health Gauge + Asset Condition Distribution -->
+    <div class="col-lg-4">
+        <div class="dashboard-card h-100">
+            <div class="dashboard-card-header">
+                <h5 class="dashboard-card-title"><i class="bi bi-pie-chart text-primary"></i> 1. Overall Health Index</h5>
+                <span class="badge bg-light text-muted border">Chart.js</span>
+            </div>
+            <div class="dashboard-card-body d-flex flex-column align-items-center justify-content-center" style="height: 280px;">
+                <div style="position: relative; width: 100%; height: 230px;">
+                    <canvas id="overallHealthChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="dashboard-card h-100">
+            <div class="dashboard-card-header">
+                <h5 class="dashboard-card-title"><i class="bi bi-bar-chart-line text-success"></i> 2. Condition Distribution</h5>
+                <span class="badge bg-light text-muted border">Chart.js</span>
+            </div>
+            <div class="dashboard-card-body" style="height: 280px;">
+                <canvas id="conditionChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart 3: Maintenance Trends -->
+    <div class="col-lg-4">
+        <div class="dashboard-card h-100">
+            <div class="dashboard-card-header">
+                <h5 class="dashboard-card-title"><i class="bi bi-graph-up-arrow text-warning"></i> 3. Maintenance Trends</h5>
+                <span class="badge bg-light text-muted border">Chart.js</span>
+            </div>
+            <div class="dashboard-card-body" style="height: 280px;">
+                <canvas id="trendsChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <!-- Chart 4: Problems by Infrastructure Type -->
+    <div class="col-lg-6">
+        <div class="dashboard-card h-100">
+            <div class="dashboard-card-header">
+                <h5 class="dashboard-card-title"><i class="bi bi-diagram-2 text-danger"></i> 4. Problems by Infrastructure Type</h5>
+                <span class="badge bg-light text-muted border">Chart.js</span>
+            </div>
+            <div class="dashboard-card-body" style="height: 280px;">
+                <canvas id="problemsByTypeChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart 5: Monthly Maintenance Statistics -->
+    <div class="col-lg-6">
+        <div class="dashboard-card h-100">
+            <div class="dashboard-card-header">
+                <h5 class="dashboard-card-title"><i class="bi bi-pie-chart-fill text-info"></i> 5. Monthly Maintenance by Priority</h5>
+                <span class="badge bg-light text-muted border">Chart.js</span>
+            </div>
+            <div class="dashboard-card-body" style="height: 280px;">
+                <canvas id="monthlyStatsChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lower Section: Active Predictive Alerts & Recent Maintenance Work Orders -->
+<div class="row g-3">
+    <!-- Predictive Alerts -->
+    <div class="col-lg-6">
+        <div class="dashboard-card h-100">
+            <div class="dashboard-card-header">
+                <h5 class="dashboard-card-title">
+                    <span class="pulse-danger me-1"></span>
+                    Recent Predictive Alerts
+                </h5>
+                <a href="{{ url_for('predictions.predictions_page') }}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="dashboard-card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for alert in recent_alerts %}
+                    <div class="list-group-item p-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <div>
+                                <span class="badge {{ alert.alert_type|badge_class }} me-1">{{ alert.alert_type }}</span>
+                                <span class="badge bg-dark">{{ alert.asset_tag }}</span>
+                                <span class="small text-muted ms-1"><i class="bi bi-geo-alt"></i> {{ alert.location }}</span>
+                            </div>
+                            <span class="badge {{ alert.status|badge_class }}">{{ alert.status }}</span>
+                        </div>
+                        <p class="mb-1 text-dark fw-semibold small">{{ alert.problem }}</p>
+                        <div class="d-flex justify-content-between align-items-center small text-muted">
+                            <span><i class="bi bi-lightning-charge text-warning"></i> Action: {{ alert.recommended_action }}</span>
+                            <button class="btn btn-sm btn-link text-decoration-none p-0" onclick="viewAssetDetails({{ alert.asset_id }})">Details &rarr;</button>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="p-4 text-center text-muted">No active alerts detected.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Maintenance Work Orders -->
+    <div class="col-lg-6">
+        <div class="dashboard-card h-100">
+            <div class="dashboard-card-header">
+                <h5 class="dashboard-card-title"><i class="bi bi-tools text-secondary"></i> Active Maintenance Tasks</h5>
+                <a href="{{ url_for('maintenance.maintenance_page') }}" class="btn btn-sm btn-outline-primary">Work Orders</a>
+            </div>
+            <div class="dashboard-card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-custom table-hover">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Asset</th>
+                                <th>Problem</th>
+                                <th>Priority</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for task in recent_maintenance %}
+                            <tr>
+                                <td class="fw-bold text-primary">{{ task.maintenance_code }}</td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">{{ task.asset_tag }}</span>
+                                    <div class="small text-muted">{{ task.asset_type.replace('_', ' ')|capitalize }}</div>
+                                </td>
+                                <td>
+                                    <span class="text-truncate d-inline-block" style="max-width: 180px;" title="{{ task.problem }}">{{ task.problem }}</span>
+                                </td>
+                                <td><span class="badge {{ task.priority|badge_class }}">{{ task.priority }}</span></td>
+                                <td><span class="badge {{ task.status|badge_class }}">{{ task.status }}</span></td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="5" class="text-center py-3 text-muted">No recent work orders.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

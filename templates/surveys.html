@@ -1,0 +1,325 @@
+{% extends "base.html" %}
+
+{% block title %}Campus Infrastructure Survey & Feedback{% endblock %}
+{% block page_title %}Campus Community Survey & Feedback Analytics{% endblock %}
+
+{% block content %}
+<!-- Top Row: Survey Stats KPI -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4 col-sm-6">
+        <div class="card border-0 shadow-sm p-3 bg-white rounded-3 border-start border-4 border-primary">
+            <span class="small text-muted text-uppercase fw-bold">Total Survey Responses</span>
+            <div class="fs-2 fw-bold text-primary">{{ analytics.total_responses }}</div>
+            <div class="small text-muted">Students, Faculty & Staff</div>
+        </div>
+    </div>
+    <div class="col-md-4 col-sm-6">
+        <div class="card border-0 shadow-sm p-3 bg-white rounded-3 border-start border-4 border-warning">
+            <span class="small text-muted text-uppercase fw-bold">Average Maintenance Rating</span>
+            <div class="fs-2 fw-bold text-warning">{{ analytics.avg_satisfaction }} / 5.0</div>
+            <div class="small text-muted">Satisfaction Score</div>
+        </div>
+    </div>
+    <div class="col-md-4 col-sm-6">
+        <div class="card border-0 shadow-sm p-3 bg-white rounded-3 border-start border-4 border-success">
+            <span class="small text-muted text-uppercase fw-bold">AI Monitoring Endorsement</span>
+            <div class="fs-2 fw-bold text-success">{{ analytics.ai_useful_pct }}%</div>
+            <div class="small text-muted">Affirmed AI system improves maintenance</div>
+        </div>
+    </div>
+</div>
+
+<!-- Survey Charts Row (Chart.js Visualizations) -->
+<div class="row g-3 mb-4">
+    <!-- Chart: AI System Sentiment -->
+    <div class="col-lg-4">
+        <div class="dashboard-card h-100">
+            <div class="dashboard-card-header">
+                <h5 class="dashboard-card-title"><i class="bi bi-robot text-primary"></i> AI Monitoring Utility</h5>
+                <span class="badge bg-light text-muted border">Chart.js</span>
+            </div>
+            <div class="dashboard-card-body" style="height: 260px;">
+                <canvas id="surveyAiChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart: Maintenance Satisfaction Breakdown -->
+    <div class="col-lg-4">
+        <div class="dashboard-card h-100">
+            <div class="dashboard-card-header">
+                <h5 class="dashboard-card-title"><i class="bi bi-star-fill text-warning"></i> Satisfaction Ratings</h5>
+                <span class="badge bg-light text-muted border">Chart.js</span>
+            </div>
+            <div class="dashboard-card-body" style="height: 260px;">
+                <canvas id="surveySatChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart: Reported Problem Categories -->
+    <div class="col-lg-4">
+        <div class="dashboard-card h-100">
+            <div class="dashboard-card-header">
+                <h5 class="dashboard-card-title"><i class="bi bi-flag-fill text-danger"></i> Community Issue Reports</h5>
+                <span class="badge bg-light text-muted border">Chart.js</span>
+            </div>
+            <div class="dashboard-card-body" style="height: 260px;">
+                <canvas id="surveyIssuesChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Survey Submission Form -->
+    <div class="col-xl-6">
+        <div class="card border-0 shadow-sm rounded-3 bg-white">
+            <div class="card-header bg-white border-bottom py-3">
+                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-pencil-square text-primary me-2"></i>Submit Campus Infrastructure Survey</h5>
+            </div>
+            <div class="card-body p-4">
+                <form action="/api/surveys" method="POST">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Your Name</label>
+                            <input type="text" name="respondent_name" class="form-control" placeholder="Optional / Your Name" value="{{ current_user.name }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-semibold">Campus Role</label>
+                            <select name="respondent_role" class="form-select">
+                                <option value="Student">Student</option>
+                                <option value="Faculty">Faculty</option>
+                                <option value="Staff">Staff</option>
+                                <option value="Visitor">Visitor</option>
+                            </select>
+                        </div>
+
+                        <!-- 1. Streetlights -->
+                        <div class="col-12"><hr class="my-1"><strong class="small text-uppercase text-primary">1. Streetlight Questions</strong></div>
+                        <div class="col-md-6">
+                            <label class="form-label small">Are the lights working properly?</label>
+                            <select name="streetlights_working" class="form-select form-select-sm">
+                                <option value="Yes" selected>Yes, well lit</option>
+                                <option value="Mostly">Mostly working</option>
+                                <option value="No">No, dark areas</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small">Any flickering or damaged poles?</label>
+                            <select name="streetlights_flickering" class="form-select form-select-sm">
+                                <option value="None" selected>None observed</option>
+                                <option value="A Few">A few observed</option>
+                                <option value="Many">Many flickering/broken</option>
+                            </select>
+                        </div>
+
+                        <!-- 2. Roads -->
+                        <div class="col-12"><hr class="my-1"><strong class="small text-uppercase text-primary">2. Road Network Questions</strong></div>
+                        <div class="col-md-6">
+                            <label class="form-label small">Any potholes or cracks?</label>
+                            <select name="roads_potholes" class="form-select form-select-sm">
+                                <option value="None" selected>None / Smooth</option>
+                                <option value="Minor">Minor cracks</option>
+                                <option value="Severe">Severe potholes</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small">Is maintenance needed?</label>
+                            <select name="roads_maintenance_needed" class="form-select form-select-sm">
+                                <option value="No" selected>No</option>
+                                <option value="Yes">Yes, resurfacing needed</option>
+                                <option value="Unsure">Unsure</option>
+                            </select>
+                        </div>
+
+                        <!-- 3. Maintenance Service Satisfaction -->
+                        <div class="col-12"><hr class="my-1"><strong class="small text-uppercase text-primary">3. Campus Maintenance Service</strong></div>
+                        <div class="col-md-6">
+                            <label class="form-label small">Are maintenance services satisfactory? (1 to 5)</label>
+                            <select name="maintenance_satisfaction" class="form-select form-select-sm">
+                                <option value="5">5 - Highly Satisfied</option>
+                                <option value="4" selected>4 - Satisfied</option>
+                                <option value="3">3 - Neutral</option>
+                                <option value="2">2 - Dissatisfied</option>
+                                <option value="1">1 - Highly Dissatisfied</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small">Are issues resolved on time?</label>
+                            <select name="maintenance_timely" class="form-select form-select-sm">
+                                <option value="Always">Always</option>
+                                <option value="Usually" selected>Usually</option>
+                                <option value="Rarely">Rarely</option>
+                                <option value="Never">Never</option>
+                            </select>
+                        </div>
+
+                        <!-- 4. AI Perception -->
+                        <div class="col-12"><hr class="my-1"><strong class="small text-uppercase text-primary">4. AI Monitoring Perception</strong></div>
+                        <div class="col-md-6">
+                            <label class="form-label small">Would AI monitoring improve campus maintenance?</label>
+                            <select name="ai_monitoring_useful" class="form-select form-select-sm">
+                                <option value="Extremely" selected>Extremely useful</option>
+                                <option value="Very">Very useful</option>
+                                <option value="Somewhat">Somewhat</option>
+                                <option value="Not Useful">Not useful</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small">Would you use such a monitoring system?</label>
+                            <select name="ai_would_use" class="form-select form-select-sm">
+                                <option value="Definitely" selected>Definitely</option>
+                                <option value="Probably">Probably</option>
+                                <option value="Unsure">Unsure</option>
+                            </select>
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold">Specific Comments or Suggestions</label>
+                            <textarea name="comments" rows="2" class="form-control" placeholder="Provide any additional location-specific observations..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 text-end">
+                        <button type="submit" class="btn btn-primary px-4">Submit Survey Response</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Community Responses Feed -->
+    <div class="col-xl-6">
+        <div class="card border-0 shadow-sm rounded-3 bg-white h-100">
+            <div class="card-header bg-white border-bottom py-3">
+                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-chat-left-quote text-success me-2"></i>Recent Community Feedback</h5>
+            </div>
+            <div class="card-body p-0" style="max-height: 750px; overflow-y: auto;">
+                <div class="list-group list-group-flush">
+                    {% for r in responses %}
+                    <div class="list-group-item p-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <div>
+                                <span class="fw-bold text-dark">{{ r.respondent_name or 'Anonymous' }}</span>
+                                <span class="badge bg-secondary-subtle text-secondary ms-1">{{ r.respondent_role }}</span>
+                            </div>
+                            <div class="text-warning">
+                                {% for i in range(r.maintenance_satisfaction) %}&#9733;{% endfor %}
+                                <span class="text-muted small">({{ r.maintenance_satisfaction }}/5)</span>
+                            </div>
+                        </div>
+
+                        {% if r.comments %}
+                        <p class="mb-2 text-dark small bg-light p-2 rounded">
+                            "{{ r.comments }}"
+                        </p>
+                        {% endif %}
+
+                        <div class="d-flex flex-wrap gap-2 small text-muted">
+                            <span><i class="bi bi-lightbulb"></i> Lights: {{ r.streetlights_working }}</span>
+                            <span>&bull;</span>
+                            <span><i class="bi bi-signpost"></i> Roads: {{ r.roads_potholes }}</span>
+                            <span>&bull;</span>
+                            <span><i class="bi bi-clock-history"></i> Resolution: {{ r.maintenance_timely }}</span>
+                            <span>&bull;</span>
+                            <span><i class="bi bi-robot"></i> AI Utility: {{ r.ai_monitoring_useful }}</span>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="p-4 text-center text-muted">No survey responses submitted yet.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const res = await fetch('/api/surveys/analytics');
+        const data = await res.json();
+
+        // 1. AI Utility Doughnut
+        const ctxAi = document.getElementById('surveyAiChart');
+        if (ctxAi) {
+            new Chart(ctxAi, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(data.ai_sentiment),
+                    datasets: [{
+                        data: Object.values(data.ai_sentiment),
+                        backgroundColor: ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'],
+                        borderWidth: 2,
+                        borderColor: '#fff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        }
+
+        // 2. Satisfaction Distribution Bar
+        const ctxSat = document.getElementById('surveySatChart');
+        if (ctxSat) {
+            new Chart(ctxSat, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(data.satisfaction_dist),
+                    datasets: [{
+                        label: 'Respondents',
+                        data: Object.values(data.satisfaction_dist),
+                        backgroundColor: ['#ef4444', '#f97316', '#f59e0b', '#3b82f6', '#10b981'],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { precision: 0 } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        // 3. Issue Reports Bar
+        const ctxIssues = document.getElementById('surveyIssuesChart');
+        if (ctxIssues) {
+            new Chart(ctxIssues, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(data.infrastructure_issues),
+                    datasets: [{
+                        label: 'Reported Issue Count',
+                        data: Object.values(data.infrastructure_issues),
+                        backgroundColor: '#f97316',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { beginAtZero: true, ticks: { precision: 0 } },
+                        y: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+    } catch (err) {
+        console.error("Survey analytics error:", err);
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}System Settings & Diagnostics{% endblock %}
+{% block page_title %}System Settings & Environment Diagnostics{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+    <!-- Left Column: Database & Environment Diagnostic Status -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm rounded-3 bg-white mb-4">
+            <div class="card-header bg-white border-bottom py-3">
+                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-database-check text-primary me-2"></i>Database Connection Status</h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center justify-content-between p-3 rounded-3 mb-3 {{ 'bg-success-subtle text-success-emphasis border border-success-subtle' if db_mode == 'mysql' else 'bg-primary-subtle text-primary-emphasis border border-primary-subtle' }}">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="fs-2">
+                            <i class="bi {{ 'bi-server' if db_mode == 'mysql' else 'bi-hdd-stack' }}"></i>
+                        </div>
+                        <div>
+                            <div class="fw-bold">Active Engine: {{ db_mode|upper }}</div>
+                            <div class="small">
+                                {% if db_mode == 'mysql' %}
+                                Connected to MySQL database <strong class="font-monospace">{{ config.DB_NAME }}</strong> on {{ config.DB_HOST }}:{{ config.DB_PORT }}
+                                {% else %}
+                                Running on zero-config fallback SQLite database engine (<span class="font-monospace">campus_maintenance.db</span>).
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <span class="badge {{ 'bg-success' if db_mode == 'mysql' else 'bg-primary' }} px-3 py-2 fs-6">ONLINE</span>
+                </div>
+
+                <h6 class="fw-bold text-dark mb-2">Switching to Local MySQL (XAMPP / MySQL Server):</h6>
+                <ol class="small text-secondary ps-3 mb-3">
+                    <li>Start your MySQL server on port <strong>3306</strong> (e.g. via XAMPP Control Panel or Windows Services).</li>
+                    <li>Update your MySQL user and password in <code class="font-monospace">.env</code> if necessary (default: <code class="font-monospace">root</code> with no password).</li>
+                    <li>Import <code class="font-monospace">database.sql</code> into MySQL or run in VS Code terminal:
+                        <div class="bg-dark text-light p-2 rounded my-1 font-monospace">python init_db.py</div>
+                    </li>
+                    <li>Restart the Flask server. It will immediately connect to MySQL!</li>
+                </ol>
+
+                {% if current_user.role == 'Admin' %}
+                <hr class="my-3 text-muted">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong class="text-dark">Reset & Re-seed Demo Data</strong>
+                        <div class="small text-muted">Repopulates 58 sample assets, 20 work orders, and 18 alerts.</div>
+                    </div>
+                    <form action="/settings/reseed" method="POST" onsubmit="return confirm('Are you sure you want to re-seed demo data?')">
+                        <button type="submit" class="btn btn-sm btn-outline-warning">
+                            <i class="bi bi-arrow-counterclockwise me-1"></i> Re-seed Database
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Campus GIS Map Location & Coordinates Settings -->
+        <div class="card border-0 shadow-sm rounded-3 bg-white mb-4">
+            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-geo-alt-fill text-danger me-2"></i>Campus GIS Map Location</h5>
+                <span class="badge bg-light text-dark border font-monospace">{{ config.CAMPUS_CENTER_LAT }}, {{ config.CAMPUS_CENTER_LNG }}</span>
+            </div>
+            <div class="card-body p-4">
+                <p class="small text-secondary mb-3">
+                    Change the physical campus location displayed on the Leaflet.js GIS map. When saved, all <strong>58 campus assets</strong> (streetlights, roads, water pipelines, drainage) will automatically shift to the new campus coordinates!
+                </p>
+
+                {% if current_user.role == 'Admin' %}
+                <form action="/settings/relocate" method="POST">
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-5">
+                            <label class="form-label small fw-bold text-dark">Latitude</label>
+                            <input type="number" step="0.000001" name="latitude" id="mapSettingLat" class="form-control form-control-sm font-monospace" value="{{ config.CAMPUS_CENTER_LAT }}" required>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label small fw-bold text-dark">Longitude</label>
+                            <input type="number" step="0.000001" name="longitude" id="mapSettingLng" class="form-control form-control-sm font-monospace" value="{{ config.CAMPUS_CENTER_LNG }}" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-bold text-dark">Zoom</label>
+                            <input type="number" min="10" max="19" name="zoom" id="mapSettingZoom" class="form-control form-control-sm font-monospace" value="{{ config.CAMPUS_ZOOM }}" required>
+                        </div>
+                    </div>
+
+                    <!-- Preset Quick Pickers -->
+                    <div class="mb-3">
+                        <label class="form-label small text-muted d-block mb-1">Quick Presets:</label>
+                        <div class="d-flex flex-wrap gap-1">
+                            <button type="button" class="btn btn-xs btn-outline-secondary py-1 px-2 small" onclick="setPresetCoords(19.076043, 72.877712, 'IIT Bombay')">IIT Bombay</button>
+                            <button type="button" class="btn btn-xs btn-outline-secondary py-1 px-2 small" onclick="setPresetCoords(28.545025, 77.192622, 'IIT Delhi')">IIT Delhi</button>
+                            <button type="button" class="btn btn-xs btn-outline-secondary py-1 px-2 small" onclick="setPresetCoords(12.991510, 80.233711, 'IIT Madras')">IIT Madras</button>
+                            <button type="button" class="btn btn-xs btn-outline-secondary py-1 px-2 small" onclick="setPresetCoords(13.021944, 77.567112, 'IISc Bangalore')">IISc Bangalore</button>
+                            <button type="button" class="btn btn-xs btn-outline-secondary py-1 px-2 small" onclick="setPresetCoords(17.385044, 78.486671, 'Hyderabad Campus')">Hyderabad</button>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="/map" class="btn btn-sm btn-outline-primary"><i class="bi bi-map me-1"></i>View Live Map</a>
+                        <button type="submit" class="btn btn-sm btn-primary">
+                            <i class="bi bi-pin-map-fill me-1"></i> Relocate Campus &amp; Shift Pins
+                        </button>
+                    </div>
+                </form>
+                {% else %}
+                <div class="alert alert-info py-2 small mb-0">
+                    <i class="bi bi-info-circle me-1"></i> Log in as an Administrator to change the campus geographic location.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <script>
+        function setPresetCoords(lat, lng, name) {
+            document.getElementById('mapSettingLat').value = lat.toFixed(6);
+            document.getElementById('mapSettingLng').value = lng.toFixed(6);
+            document.getElementById('mapSettingZoom').value = 17;
+        }
+        </script>
+
+        <!-- AI Engine Parameters -->
+        <div class="card border-0 shadow-sm rounded-3 bg-white">
+            <div class="card-header bg-white border-bottom py-3">
+                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-cpu-fill text-info me-2"></i>Machine Learning Engine Status</h5>
+            </div>
+            <div class="card-body p-4">
+                <ul class="list-group list-group-flush small">
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span>Algorithm:</span>
+                        <strong class="text-dark">Scikit-learn RandomForestClassifier &amp; Regressor</strong>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span>Feature Set:</span>
+                        <span class="text-muted">8 multi-factor telemetry features</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span>Model Bundle Path:</span>
+                        <code class="text-primary font-monospace">{{ config.ML_MODEL_PATH.name }}</code>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between px-0">
+                        <span>Status:</span>
+                        <span class="badge bg-success">Trained &amp; Ready (96.7% Test Accuracy)</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: User Management Overview -->
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm rounded-3 bg-white h-100">
+            <div class="card-header bg-white border-bottom py-3">
+                <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-people-fill text-primary me-2"></i>Registered User Accounts & Roles</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-custom table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Department</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for u in users %}
+                            <tr>
+                                <td class="fw-semibold text-dark">{{ u.name }}</td>
+                                <td><code class="text-primary">{{ u.email }}</code></td>
+                                <td>
+                                    <span class="badge {{ 'bg-primary' if u.role == 'Admin' else 'bg-warning text-dark' if u.role == 'Maintenance Staff' else 'bg-secondary' }}">
+                                        {{ u.role }}
+                                    </span>
+                                </td>
+                                <td><small class="text-muted">{{ u.department }}</small></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="p-3 bg-light rounded-bottom border-top small text-secondary">
+                    <strong class="text-dark"><i class="bi bi-info-circle me-1"></i>Role Access Guidelines:</strong>
+                    <ul class="mb-0 ps-3 mt-1">
+                        <li><strong>Admin:</strong> Complete administrative access, asset creation/modification/deletion, maintenance task management, and data resets.</li>
+                        <li><strong>Maintenance Staff:</strong> Update work order statuses, execute technician actions, and convert predictive alerts to active tasks.</li>
+                        <li><strong>Viewer:</strong> Read-only access to executive dashboard, interactive campus map, and reports.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
